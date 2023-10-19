@@ -7,7 +7,7 @@ from sklearn.metrics import f1_score, confusion_matrix
 
 TRAIN_DIR = "./frames/train"
 TEST_DIR = "./frames/test"
-RESNET_LAYERS = 18
+RESNET_LAYERS = 50
  
 
 def get_dataloader(img_dir, batch_size=64, is_train=True):
@@ -36,6 +36,8 @@ def get_model():
         model = models.resnet18(weights=models.ResNet18_Weights.DEFAULT)
     elif RESNET_LAYERS == 50:
         model = models.resnet50(weights=models.ResNet50_Weights.DEFAULT)
+    elif RESNET_LAYERS == 101:
+        model = models.resnet101(weights=models.ResNet101_Weights.DEFAULT)
 
     num_ftrs = model.fc.in_features
     model.fc = torch.nn.Linear(num_ftrs, 1)
