@@ -45,14 +45,14 @@ def get_model():
     return model
 
 
-def train(model, train_loader, num_epochs=10, learning_rate=0.001):
+def train(model, train_loader, cur_epoch=0, num_epochs=10, learning_rate=0.001):
     device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
     model = model.to(device)
     model.train()
     criterion = torch.nn.BCEWithLogitsLoss()
     optimizer = torch.optim.Adam(model.fc.parameters(), lr=learning_rate)
     total_step = len(train_loader)
-    for epoch in range(num_epochs):
+    for epoch in range(cur_epoch, num_epochs):
         for i, (images, labels) in enumerate(train_loader):
             images = images.to(device)
             labels = labels.float().to(device)
@@ -99,6 +99,7 @@ def test(model, test_loader):
 
 def main():
     batch_size = 64
+    cur_epoch = 0
     num_epochs = 100
     learning_rate = 0.005
     
@@ -110,10 +111,12 @@ def main():
         print("Usage: python resnet.py [train|test] [checkpoint file]")
         sys.exit(1)
     elif len(sys.argv) == 3:
-        model.load_state_dict(torch.load(sys.argv[2]))
+        ckpt_file = sys.argv[2]
+        cur_epoch = int(ckpt_file.split(".")[-1][4:])
+        model.load_state_dict(torch.load(ckpt_file))
 
     if sys.argv[1] == "train":
-        train(model, train_loader, num_epochs=num_epochs, learning_rate=learning_rate)
+        train(model, train_loader, cur_epoch=cur_epoch, num_epochs=num_epochs, learning_rate=learning_rate)
         test(model, test_loader)
     elif sys.argv[1] == "test":
         test(model, test_loader)
