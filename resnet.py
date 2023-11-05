@@ -2,12 +2,12 @@ import sys
 
 import torch
 from torchvision import datasets, models, transforms
-from sklearn.metrics import f1_score, confusion_matrix
+from torchmetrics import F1Score, ConfusionMatrix
 
 
 TRAIN_DIR = "./frames/train"
 TEST_DIR = "./frames/test"
-RESNET_LAYERS = 50
+RESNET_LAYERS = 101
  
 
 def get_dataloader(img_dir, batch_size=64, is_train=True):
@@ -91,8 +91,10 @@ def test(model, test_loader):
             targets = torch.cat((targets, labels.cpu()))
         print(f"Accuracy of the model on the test images: {100 * correct / total:.2f}%")
     
-    bcm = confusion_matrix(targets, preds)
-    f1 = f1_score(targets, preds)
+    confmat = ConfusionMatrix(task="binary", num_classes=2)
+    bcm = confmat(preds, targets)
+    metric = F1Score(task="binary", num_classes=2)
+    f1 = metric(preds, targets)
     print(f"F1 score: {f1:.2f}")
     print(f"Confusion matrix: \n{bcm}")
 
@@ -100,7 +102,7 @@ def test(model, test_loader):
 def main():
     batch_size = 64
     cur_epoch = 0
-    num_epochs = 100
+    num_epochs = 20
     learning_rate = 0.005
     
     train_loader = get_dataloader(TRAIN_DIR, batch_size=batch_size)
