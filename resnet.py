@@ -1,13 +1,15 @@
 import sys
+import os
 
+from PIL import Image
 import torch
 from torchvision import datasets, models, transforms
-from torchmetrics import F1Score, ConfusionMatrix
+from torchmetrics import F1Score, ConfusionMatrix, Precision, Recall
 
 
 TRAIN_DIR = "./frames/train"
 TEST_DIR = "./frames/test"
-RESNET_LAYERS = 101
+RESNET_LAYERS = 50
  
 
 def get_dataloader(img_dir, batch_size=64, is_train=True):
@@ -94,9 +96,35 @@ def test(model, test_loader):
     confmat = ConfusionMatrix(task="binary", num_classes=2)
     bcm = confmat(preds, targets)
     metric = F1Score(task="binary", num_classes=2)
+    recall = Recall(task="binary", num_classes=2)
+    precision = Precision(task="binary", num_classes=2)
+    pr = precision(preds, targets)
+    re = recall(preds, targets)
     f1 = metric(preds, targets)
     print(f"F1 score: {f1:.2f}")
     print(f"Confusion matrix: \n{bcm}")
+    print(f"Precision: {pr:.2f}")
+    print(f"Recall: {re:.2f}")
+
+
+def test_single_image(model, img_path):
+    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+    model = model.to(device)
+    model.eval()
+
+    test_transform = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+        transforms.Normalize((0.5,), (0.5,)),
+    ])
+    img = test_transform(Image.open(img_path))
+    img = img.unsqueeze(0)
+    img = img.to(device)
+    with torch.no_grad():
+        output = model(img)
+        output = output.squeeze()
+        predicted = torch.round(torch.sigmoid(output))
+        return predicted
 
 
 def main():
@@ -121,6 +149,10 @@ def main():
         train(model, train_loader, cur_epoch=cur_epoch, num_epochs=num_epochs, learning_rate=learning_rate)
         test(model, test_loader)
     elif sys.argv[1] == "test":
+        # for file in os.listdir(TEST_DIR + "\\weap"):
+        #     res = test_single_image(model, os.path.join(TEST_DIR + "\\weap", file))
+        #     if res == 0:
+        #         print(f"False negative: {file}")
         test(model, test_loader)
 
 
